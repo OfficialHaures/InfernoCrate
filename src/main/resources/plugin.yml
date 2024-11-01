@@ -1,0 +1,7 @@
+name: InfernoCrate
+version: '1.0'
+main: nl.inferno.infernoCrate.InfernoCrate
+api-version: '1.19'
+commands:
+  crate:
+    description: Crate command

@@ -1,0 +1,53 @@
+# InfernoCrate Configuration
+
+settings:
+  # Animation settings
+  animations:
+    opening-duration: 3
+    winning-duration: 2
+    particle-density: 2
+
+  # Hologram settings
+  holograms:
+    height: 2.0
+    line-spacing: 0.25
+    update-interval: 20
+
+# Messages can use color codes with §
+messages:
+  prefix: "§6§lCrates §8» §7"
+  no-permission: "§cYou don't have permission to do this!"
+  received-key: "§aYou received %amount%x %crate% key!"
+  crate-opened: "§aYou opened a %crate% crate!"
+  won-reward: "§aYou won: §6%reward%"
+  broadcast-format: "§6%player% §7has won §6%reward% §7from a %crate%!"
+
+# Sound effects
+sounds:
+  open:
+    sound: BLOCK_CHEST_OPEN
+    volume: 1.0
+    pitch: 1.0
+  win:
+    sound: ENTITY_PLAYER_LEVELUP
+    volume: 1.0
+    pitch: 1.0
+
+# Particle effects
+particles:
+  enabled: true
+  types:
+    common: VILLAGER_HAPPY
+    rare: END_ROD
+    epic: SPELL_WITCH
+    legendary: TOTEM
+
+# Key settings
+keys:
+  glow: true
+  material: TRIPWIRE_HOOK
+  lore:
+    - "§7Use this key to open a"
+    - "§7%type% §7crate!"
+    - ""
+    - "§8ID: %id%"

@@ -1,0 +1,79 @@
+crates:
+  legendary1:
+    displayName: "§6§lLegendary Crate"
+    type: LEGENDARY
+    location:
+      world: world
+      x: 100
+      y: 64
+      z: 100
+    rewards:
+      diamond_reward:
+        displayName: "§b64x Diamonds"
+        item:
+          type: DIAMOND
+          amount: 64
+        chance: 10.0
+        broadcast: true
+        commands:
+          - "give %player% diamond 64"
+
+      netherite_reward:
+        displayName: "§5Netherite Set"
+        item:
+          type: NETHERITE_CHESTPLATE
+          amount: 1
+        chance: 5.0
+        broadcast: true
+        commands:
+          - "give %player% netherite_helmet 1"
+          - "give %player% netherite_chestplate 1"
+          - "give %player% netherite_leggings 1"
+          - "give %player% netherite_boots 1"
+
+  epic1:
+    displayName: "§5§lEpic Crate"
+    type: EPIC
+    location:
+      world: world
+      x: 105
+      y: 64
+      z: 105
+    rewards:
+      gold_reward:
+        displayName: "§632x Gold Blocks"
+        item:
+          type: GOLD_BLOCK
+          amount: 32
+        chance: 15.0
+        broadcast: false
+        commands:
+          - "give %player% gold_block 32"
+
+  rare1:
+    displayName: "§9§lRare Crate"
+    type: RARE
+    rewards:
+      iron_reward:
+        displayName: "§f32x Iron Blocks"
+        item:
+          type: IRON_BLOCK
+          amount: 32
+        chance: 20.0
+        broadcast: false
+        commands:
+          - "give %player% iron_block 32"
+
+  common1:
+    displayName: "§a§lCommon Crate"
+    type: COMMON
+    rewards:
+      coal_reward:
+        displayName: "§864x Coal"
+        item:
+          type: COAL
+          amount: 64
+        chance: 30.0
+        broadcast: false
+        commands:
+          - "give %player% coal 64"
