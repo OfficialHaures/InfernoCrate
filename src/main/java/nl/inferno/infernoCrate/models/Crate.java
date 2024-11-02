@@ -33,16 +33,20 @@ public class Crate {
     }
 
     public CrateReward getRandomReward() {
+        if (rewards.isEmpty()) {
+            return null;
+        }
+
         double totalWeight = rewards.stream()
                 .mapToDouble(CrateReward::getChance)
                 .sum();
 
         double random = Math.random() * totalWeight;
-        double countWeight = 0.0;
+        double currentWeight = 0;
 
         for (CrateReward reward : rewards) {
-            countWeight += reward.getChance();
-            if (countWeight >= random) {
+            currentWeight += reward.getChance();
+            if (random <= currentWeight) {
                 return reward;
             }
         }

@@ -1,6 +1,8 @@
 package nl.inferno.infernoCrate.gui;
 
 import nl.inferno.infernoCrate.InfernoCrate;
+import nl.inferno.infernoCrate.gui.CrateEditGUI;
+import nl.inferno.infernoCrate.gui.CrateRewardGUI;
 import nl.inferno.infernoCrate.models.Crate;
 import nl.inferno.infernoCrate.models.CrateReward;
 import org.bukkit.Material;
@@ -9,6 +11,7 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.ClickType;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashMap;
@@ -16,9 +19,9 @@ import java.util.Map;
 import java.util.UUID;
 
 public class GuiListener implements Listener {
-
     private final InfernoCrate plugin;
-    private final Map<UUID, EditSession> editingSessions = new HashMap<>();
+    private final Map<UUID, CrateReward> editingReward = new HashMap<>();
+    private final Map<UUID, Crate> editingCrate = new HashMap<>();
 
     public GuiListener(InfernoCrate plugin) {
         this.plugin = plugin;
@@ -27,187 +30,145 @@ public class GuiListener implements Listener {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         String title = event.getView().getTitle();
-        if (!title.startsWith("Editing: ") && !title.startsWith("Rewards: ") && !title.startsWith("Hologram: ")) {
-            return;
-        }
-
-        event.setCancelled(true);
-
         Player player = (Player) event.getWhoClicked();
         ItemStack clicked = event.getCurrentItem();
 
-        if (clicked == null || !clicked.hasItemMeta()) return;
-
         if (title.startsWith("Editing: ")) {
-            handleEditMenu(player, clicked, title.substring(9));
-        } else if (title.startsWith("Rewards: ")) {
-            handleRewardMenu(player, clicked, title.substring(9), event.getSlot(), event.getClick());
-        } else if (title.startsWith("Hologram: ")) {
-            handleHologramMenu(player, clicked, title.substring(9), event.getSlot());
+            event.setCancelled(true);
+            if (clicked == null || !clicked.hasItemMeta()) return;
+
+            Crate crate = getCrateFromTitle(title.substring(9));
+            if (crate == null) return;
+
+            handleMainEditMenu(player, clicked, crate);
+        }
+
+        else if (title.startsWith("Rewards: ")) {
+            event.setCancelled(true);
+            if (clicked == null || !clicked.hasItemMeta()) return;
+
+            Crate crate = getCrateFromTitle(title.substring(9));
+            if (crate == null) return;
+
+            handleRewardsMenu(player, clicked, event.getSlot(), event.getClick(), crate);
+        }
+
+        else if (title.equals("Edit Reward")) {
+            event.setCancelled(true);
+            if (clicked == null || !clicked.hasItemMeta()) return;
+
+            CrateReward reward = editingReward.get(player.getUniqueId());
+            if (reward == null) return;
+
+            handleRewardEdit(player, clicked, reward);
+        }
+
+        else if (title.equals("Add Reward")) {
+            if (event.getSlot() != 22) {
+                event.setCancelled(true);
+                return;
+            }
+
+            Crate crate = editingCrate.get(player.getUniqueId());
+            if (crate == null) return;
+
+            handleAddReward(player, clicked, crate);
         }
     }
 
-    private void handleEditMenu(Player player, ItemStack clicked, String crateName) {
-        Crate crate = getCrateByName(crateName);
-        if (crate == null) return;
-
-        switch (clicked.getItemMeta().getDisplayName()) {
-            case "§6Edit Rewards":
+    private void handleMainEditMenu(Player player, ItemStack clicked, Crate crate) {
+        switch (clicked.getType()) {
+            case CHEST:
+                editingCrate.put(player.getUniqueId(), crate);
                 new CrateRewardGUI(plugin, crate).openGUI(player);
                 break;
-
-            case "§6Get Crate Block":
+            case ENDER_CHEST:
                 ItemStack crateBlock = plugin.getCrateManager().createPhysicalCrate(crate);
-                if (player.getInventory().firstEmpty() == -1) {
-                    player.getWorld().dropItemNaturally(player.getLocation(), crateBlock);
-                } else {
-                    player.getInventory().addItem(crateBlock);
-                }
+                player.getInventory().addItem(crateBlock);
                 player.sendMessage("§aYou received a physical crate block!");
                 break;
-
-            case "§6Edit Hologram":
-                if (crate.getLocation() == null) {
-                    player.sendMessage("§cPlace the crate first before editing holograms!");
-                    return;
-                }
-                new CrateHologramGUI(plugin, crate).openGUI(player);
-                break;
         }
     }
 
-    private void handleRewardMenu(Player player, ItemStack clicked, String crateName, int slot, ClickType clickType) {
-        Crate crate = getCrateByName(crateName);
-        if (crate == null) return;
-
-        // Navigation buttons
-        if (clicked.getType() == Material.ARROW) {
-            if (clicked.getItemMeta().getDisplayName().equals("§6Previous Page")) {
-                new CrateRewardGUI(plugin, crate, getCurrentPage(player) - 1).openGUI(player);
-            } else if (clicked.getItemMeta().getDisplayName().equals("§6Next Page")) {
-                new CrateRewardGUI(plugin, crate, getCurrentPage(player) + 1).openGUI(player);
-            }
-            return;
-        }
-
-        // Add new reward button
+    private void handleRewardsMenu(Player player, ItemStack clicked, int slot, ClickType clickType, Crate crate) {
         if (clicked.getType() == Material.EMERALD) {
-            startRewardCreation(player, crate);
+            new CrateRewardGUI(plugin, crate).openAddRewardGUI(player);
             return;
         }
 
-        // Existing reward actions
-        if (slot < 45) {
-            CrateReward reward = crate.getRewards().get(slot + (getCurrentPage(player) * 45));
-
+        if (slot < 45 && slot >= 0) {
             if (clickType == ClickType.LEFT) {
-                // Edit reward
-                startRewardEdit(player, crate, reward);
+                CrateReward reward = crate.getRewards().get(slot);
+                editingReward.put(player.getUniqueId(), reward);
+                new CrateRewardGUI(plugin, crate).openRewardEditGUI(player, reward);
             } else if (clickType == ClickType.RIGHT) {
-                // Remove reward
-                crate.removeReward(reward);
+                crate.getRewards().remove(slot);
                 plugin.getCrateManager().saveCrates();
-                new CrateRewardGUI(plugin, crate, getCurrentPage(player)).openGUI(player);
+                new CrateRewardGUI(plugin, crate).openGUI(player);
             }
         }
     }
 
-    private void handleHologramMenu(Player player, ItemStack clicked, String crateName, int slot) {
-        Crate crate = getCrateByName(crateName);
+    private void handleRewardEdit(Player player, ItemStack clicked, CrateReward reward) {
+        Crate crate = editingCrate.get(player.getUniqueId());
         if (crate == null) return;
 
-        if (clicked.getType() == Material.NAME_TAG) {
-            int line = slot - 10;
-            if (line >= 0 && line < 3) {
-                startHologramEdit(player, crate, line);
-            }
-        } else if (clicked.getType() == Material.EMERALD) {
-            saveHologramChanges(player, crate);
+        switch (clicked.getType()) {
+            case REDSTONE:
+                reward.setChance(Math.max(0, reward.getChance() - 10));
+                break;
+            case RED_DYE:
+                reward.setChance(Math.max(0, reward.getChance() - 1));
+                break;
+            case LIME_DYE:
+                reward.setChance(Math.min(100, reward.getChance() + 1));
+                break;
+            case EMERALD:
+                reward.setChance(Math.min(100, reward.getChance() + 10));
+                break;
+            case BELL:
+                reward.setBroadcast(!reward.isBroadcast());
+                break;
+            case EMERALD_BLOCK:
+                plugin.getCrateManager().saveCrates();
+                player.closeInventory();
+                player.sendMessage("§aReward settings saved!");
+                editingReward.remove(player.getUniqueId());
+                new CrateRewardGUI(plugin, crate).openGUI(player);
+                return;
         }
+
+        new CrateRewardGUI(plugin, crate).openRewardEditGUI(player, reward);
     }
 
-    private void startRewardCreation(Player player, Crate crate) {
-        player.closeInventory();
-        EditSession session = new EditSession(crate, EditType.NEW_REWARD);
-        editingSessions.put(player.getUniqueId(), session);
+    private void handleAddReward(Player player, ItemStack clicked, Crate crate) {
+        if (clicked == null || clicked.getType() == Material.AIR) return;
 
-        player.sendMessage("§aPlace the reward item in your hand and type its chance (0-100)");
-        player.sendMessage("§7Type 'cancel' to cancel");
-    }
+        CrateReward newReward = new CrateReward(
+                "reward_" + System.currentTimeMillis(),
+                clicked.getItemMeta().hasDisplayName() ? clicked.getItemMeta().getDisplayName() : "Reward",
+                clicked.clone(),
+                5.0
+        );
 
-    private void startRewardEdit(Player player, Crate crate, CrateReward reward) {
-        player.closeInventory();
-        EditSession session = new EditSession(crate, EditType.EDIT_REWARD);
-        session.setReward(reward);
-        editingSessions.put(player.getUniqueId(), session);
-
-        player.sendMessage("§aEditing reward. Available commands:");
-        player.sendMessage("§7- chance <number> : Set the chance");
-        player.sendMessage("§7- broadcast <true/false> : Toggle broadcast");
-        player.sendMessage("§7- command add <command> : Add command");
-        player.sendMessage("§7- command remove <index> : Remove command");
-        player.sendMessage("§7- done : Save changes");
-        player.sendMessage("§7- cancel : Cancel editing");
-    }
-
-    private void startHologramEdit(Player player, Crate crate, int line) {
-        player.closeInventory();
-        EditSession session = new EditSession(crate, EditType.EDIT_HOLOGRAM);
-        session.setHologramLine(line);
-        editingSessions.put(player.getUniqueId(), session);
-
-        player.sendMessage("§aType the new text for line " + (line + 1));
-        player.sendMessage("§7Type 'cancel' to cancel");
-    }
-
-    private void saveHologramChanges(Player player, Crate crate) {
-        plugin.getCrateManager().setupHolograms(crate);
+        crate.getRewards().add(newReward);
         plugin.getCrateManager().saveCrates();
-        player.sendMessage("§aHologram updated successfully!");
-        player.closeInventory();
+
+        editingReward.put(player.getUniqueId(), newReward);
+        new CrateRewardGUI(plugin, crate).openRewardEditGUI(player, newReward);
     }
 
-    private Crate getCrateByName(String name) {
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        Player player = (Player) event.getPlayer();
+        editingReward.remove(player.getUniqueId());
+        editingCrate.remove(player.getUniqueId());
+    }
+
+    private Crate getCrateFromTitle(String name) {
         return plugin.getCrateManager().getCrates().values().stream()
                 .filter(c -> c.getDisplayName().equals(name))
                 .findFirst()
                 .orElse(null);
-    }
-
-    private int getCurrentPage(Player player) {
-        return editingSessions.containsKey(player.getUniqueId()) ?
-                editingSessions.get(player.getUniqueId()).getPage() : 0;
-    }
-
-    private static class EditSession {
-        private final Crate crate;
-        private final EditType type;
-        private CrateReward reward;
-        private int hologramLine;
-        private int page;
-
-        public EditSession(Crate crate, EditType type) {
-            this.crate = crate;
-            this.type = type;
-        }
-
-        public void setReward(CrateReward reward) {
-            this.reward = reward;
-        }
-
-        public void setHologramLine(int line) {
-            this.hologramLine = line;
-        }
-        public int getPage() {
-            return page;
-        }
-
-        // Getters and setters
-    }
-
-    private enum EditType {
-        NEW_REWARD,
-        EDIT_REWARD,
-        EDIT_HOLOGRAM
     }
 }

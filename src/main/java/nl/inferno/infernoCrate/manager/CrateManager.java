@@ -150,27 +150,23 @@ public class CrateManager {
 
     public void openCrate(Player player, Crate crate) {
         CrateReward reward = crate.getRandomReward();
-
-        ParticleUtils.playCrateOpenEffect(crate.getLocation().clone().add(0.5, 0.5, 0.5));
-        ParticleUtils.playWinningEffect(crate.getLocation().clone().add(0.5, 0.5, 0.5));
-
-        player.getInventory().addItem(reward.getItem());
-
-        for (String command : reward.getCommands()) {
-            plugin.getServer().dispatchCommand(
-                    plugin.getServer().getConsoleSender(),
-                    command.replace("%player%", player.getName())
-            );
+        if (reward == null) {
+            player.sendMessage("§cThis crate has no rewards configured!");
+            return;
         }
+
+        player.getInventory().addItem(reward.getItem().clone());
 
         if (reward.isBroadcast()) {
-            plugin.getServer().broadcastMessage(
-                    "§6" + player.getName() + " §7has won §6" +
-                            reward.getDisplayName() + " §7from a " +
-                            crate.getType().getDisplayName() + " §7crate!"
-            );
+            Bukkit.broadcastMessage("§6" + player.getName() + " §7has won " + reward.getDisplayName() + " §7from a " + crate.getDisplayName() + "§7!");
+        }
+
+        for (String command : reward.getCommands()) {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(),
+                    command.replace("%player%", player.getName()));
         }
     }
+
 
     public Crate getCrate(String id) {
         return crates.get(id);

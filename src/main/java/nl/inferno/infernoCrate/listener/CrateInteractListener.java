@@ -11,8 +11,11 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
+import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
 
 public class CrateInteractListener implements Listener {
 
@@ -80,6 +83,30 @@ public class CrateInteractListener implements Listener {
             }
         }
     }
+    @EventHandler
+    public void onInventoryClick(InventoryClickEvent event) {
+        ItemStack item = event.getCurrentItem();
+        if (item != null && item.getType() == Material.ENDER_CHEST && item.hasItemMeta() && item.getItemMeta().hasLore()) {
+            String id = getCrateIdFromLore(item);
+            if (id != null) {
+                Player player = (Player) event.getWhoClicked();
+                if (!player.hasPermission("infernocrate.admin")) {
+                    event.setCancelled(true);
+                }
+            }
+        }
+    }
+
+    private String getCrateIdFromLore(ItemStack item) {
+        List<String> lore = item.getItemMeta().getLore();
+        for (String line : lore) {
+            if (line.startsWith("§8ID: ")) {
+                return line.substring(6);
+            }
+        }
+        return null;
+    }
+
 
     @EventHandler
     public void onCratePlace(BlockPlaceEvent event) {

@@ -158,20 +158,29 @@ public class CrateCommand implements CommandExecutor, TabCompleter {
             return;
         }
 
-        int amount;
-        try {
-            amount = Integer.parseInt(amountStr);
-        } catch (NumberFormatException e) {
-            sender.sendMessage("§cInvalid amount!");
-            return;
+        ItemStack key = crate.getKey();
+        if (key == null) {
+
+            key = new ItemStack(Material.TRIPWIRE_HOOK);
+            ItemMeta meta = key.getItemMeta();
+            meta.setDisplayName("§6" + crate.getType().getDisplayName() + " Crate Key");
+            meta.setLore(Arrays.asList(
+                    "§7Use this key to open a",
+                    "§7" + crate.getType().getDisplayName() + " §7crate!",
+                    "",
+                    "§8ID: " + crate.getId()
+            ));
+            key.setItemMeta(meta);
+            crate.setKey(key);
+            plugin.getCrateManager().saveCrates();
         }
 
-        ItemStack key = crate.getKey().clone();
-        key.setAmount(amount);
-        target.getInventory().addItem(key);
+        ItemStack keyToGive = key.clone();
+        keyToGive.setAmount(Integer.parseInt(amountStr));
+        target.getInventory().addItem(keyToGive);
 
-        sender.sendMessage("§aGave " + amount + " key(s) to " + target.getName());
-        target.sendMessage("§aYou received " + amount + " " + crate.getType().getDisplayName() + " §acrate key(s)!");
+        sender.sendMessage("§aGave " + amountStr + " key(s) to " + target.getName());
+        target.sendMessage("§aYou received " + amountStr + " " + crate.getType().getDisplayName() + " §acrate key(s)!");
     }
 
     private void listCrates(CommandSender sender) {

@@ -22,16 +22,12 @@ public class CrateEditGUI {
 
     public void openGUI(Player player) {
         Inventory inv = Bukkit.createInventory(null, 27, "Editing: " + crate.getDisplayName());
-
-        // Edit rewards button
         inv.setItem(11, createGuiItem(Material.CHEST, "§6Edit Rewards",
                 "§7Click to edit crate rewards"));
 
-        // Get physical crate button
         inv.setItem(13, createGuiItem(Material.ENDER_CHEST, "§6Get Crate Block",
                 "§7Click to get a placeable crate"));
 
-        // Edit hologram button
         inv.setItem(15, createGuiItem(Material.NAME_TAG, "§6Edit Hologram",
                 "§7Click to edit hologram text"));
 

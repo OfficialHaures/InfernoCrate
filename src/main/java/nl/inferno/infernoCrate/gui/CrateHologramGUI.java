@@ -38,7 +38,6 @@ public class CrateHologramGUI {
                     "§eClick to edit"));
         }
 
-        // Save button
         inv.setItem(22, createGuiItem(Material.EMERALD, "§aSave Changes",
                 "§7Click to save hologram changes"));
 
